@@ -15,6 +15,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <iomanip>
+#include <thread>
+#include <iostream>
+#include <ctime>
+#include <sstream>
 
 #include "../../common/TracyProtocol.hpp"
 #include "../../common/TracyStackFrames.hpp"
@@ -41,6 +46,7 @@ void SigInt( int )
     // We don't need stronger ordering since this signal handler doesn't do
     // anything else that would need to be ordered relatively to this.
     s_disconnect.store(true, std::memory_order_relaxed);
+    signal(SIGBREAK, SigInt);
 }
 
 static bool s_isStdoutATerminal = false;
@@ -90,10 +96,11 @@ void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
 
 [[noreturn]] void Usage()
 {
-    printf( "Usage: capture -o output.tracy [-a address] [-p port] [-f] [-s seconds]\n" );
+    printf( "Usage: capture [-a address] [-p port] [-f] [-b bytes]\n" );
     exit( 1 );
 }
 
+int main_loop(bool overwrite, const char* address, int port, int bytes);
 int main( int argc, char** argv )
 {
 #ifdef _WIN32
@@ -106,31 +113,29 @@ int main( int argc, char** argv )
 
     InitIsStdoutATerminal();
 
+    signal(SIGBREAK, SigInt);
+
     bool overwrite = false;
     const char* address = "127.0.0.1";
-    const char* output = nullptr;
     int port = 8086;
-    int seconds = -1;
+    int bytes = -1;
 
     int c;
-    while( ( c = getopt( argc, argv, "a:o:p:fs:" ) ) != -1 )
+    while ((c = getopt(argc, argv, "a:o:p:fb:")) != -1)
     {
-        switch( c )
+        switch (c)
         {
         case 'a':
             address = optarg;
             break;
-        case 'o':
-            output = optarg;
-            break;
         case 'p':
-            port = atoi( optarg );
+            port = atoi(optarg);
             break;
         case 'f':
             overwrite = true;
             break;
-        case 's':
-            seconds = atoi (optarg);
+        case 'b':
+            bytes = atoi(optarg);
             break;
         default:
             Usage();
@@ -138,7 +143,23 @@ int main( int argc, char** argv )
         }
     }
 
-    if( !address || !output ) Usage();
+    if (!address) Usage();
+
+    for (;;)
+    {
+        s_disconnect = false;
+        main_loop(overwrite, address, port, bytes);
+    }
+}
+
+int main_loop(bool overwrite, const char* address, int port, int bytes)
+{
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::stringstream sstream;
+    sstream << std::put_time(&tm, "%Y.%m.%d.%H.%M.%S") << ".tracy";
+    std::string str = sstream.str();
+    char const* output = str.c_str();
 
     struct stat st;
     if( stat( output, &st ) == 0 && !overwrite )
@@ -180,15 +201,6 @@ int main( int argc, char** argv )
     }
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ), tracy::TimeToString( worker.GetResolution() ) );
-
-#ifdef _WIN32
-    signal( SIGINT, SigInt );
-#else
-    struct sigaction sigint, oldsigint;
-    memset( &sigint, 0, sizeof( sigint ) );
-    sigint.sa_handler = SigInt;
-    sigaction( SIGINT, &sigint, &oldsigint );
-#endif
 
     auto& lock = worker.GetMbpsDataLock();
 
@@ -240,10 +252,10 @@ int main( int argc, char** argv )
         }
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-        if( seconds != -1 )
+        if( bytes != -1 )
         {
             const auto dur = std::chrono::high_resolution_clock::now() - t0;
-            if( std::chrono::duration_cast<std::chrono::seconds>(dur).count() >= seconds )
+            if (netTotal >= bytes)
             {
                 // Relaxed order is sufficient because only this thread ever reads
                 // this value.
