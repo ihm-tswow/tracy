@@ -1532,18 +1532,9 @@ void Profiler::Worker()
 
     SetThreadName( "Tracy Profiler" );
 
-#ifdef TRACY_DATA_PORT
-    const bool dataPortSearch = false;
-    auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
-#else
-    const bool dataPortSearch = m_userPort == 0;
-    auto dataPort = m_userPort != 0 ? m_userPort : 8086;
-#endif
-#ifdef TRACY_BROADCAST_PORT
-    const auto broadcastPort = TRACY_BROADCAST_PORT;
-#else
-    const auto broadcastPort = 8086;
-#endif
+    const bool dataPortSearch = true;
+    auto dataPort = 8101;
+    const auto broadcastPort = 8100;
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
