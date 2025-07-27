@@ -55,6 +55,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <thread>
+#include <iostream>
 
 #include "../common/TracyAlign.hpp"
 #include "../common/TracySocket.hpp"
@@ -1638,6 +1639,7 @@ void Profiler::Worker()
             if( listen.Listen( dataPort+i, 4 ) )
             {
                 dataPort += i;
+                std::cout << "Tracy listening on port " << dataPort << std::endl;
                 isListening = true;
                 break;
             }
