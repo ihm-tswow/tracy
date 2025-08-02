@@ -113,9 +113,11 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 #  include <mutex>
 #endif
 
+static std::uint16_t dataPort;
+static std::uint16_t broadcastPort;
+
 namespace tracy
 {
-
 #ifdef __ANDROID__
 // Implementation helpers of EnsureReadable(address).
 // This is so far only needed on Android, where it is common for libraries to be mapped
@@ -1523,9 +1525,6 @@ bool Profiler::ShouldExit()
 {
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
-
-static std::uint16_t dataPort;
-static std::uint16_t broadcastPort;
 
 void Profiler::Worker()
 {
@@ -3879,6 +3878,14 @@ int64_t Profiler::GetTimeQpc()
 }
 #endif
 
+std::uint16_t GetDataPort() {
+    return dataPort;
+}
+
+std::uint16_t GetBroadcastPort() {
+    return broadcastPort;
+}
+
 }
 
 #ifdef __cplusplus
@@ -4264,14 +4271,6 @@ TRACY_API void ___tracy_shutdown_profiler( void )
     tracy::ShutdownProfiler();
 }
 #  endif
-
-std::uint16_t GetDataPort() {
-    return dataPort;
-}
-
-std::uint16_t GetBroadcastPort() {
-    return broadcastPort;
-}
 
 #ifdef __cplusplus
 }
