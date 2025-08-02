@@ -945,9 +945,8 @@ private:
     bool m_crashHandlerInstalled;
 };
 
-}
-
 TRACY_API std::uint16_t GetDataPort();
 TRACY_API std::uint16_t GetBroadcastPort();
 
+}
 #endif

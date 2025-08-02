@@ -4265,10 +4265,6 @@ TRACY_API void ___tracy_shutdown_profiler( void )
 }
 #  endif
 
-#ifdef __cplusplus
-}
-#endif
-
 std::uint16_t GetDataPort() {
     return dataPort;
 }
@@ -4277,4 +4273,7 @@ std::uint16_t GetBroadcastPort() {
     return broadcastPort;
 }
 
+#ifdef __cplusplus
+}
+#endif
 #endif
