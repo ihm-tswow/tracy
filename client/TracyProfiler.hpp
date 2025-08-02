@@ -5,6 +5,7 @@
 #include <atomic>
 #include <stdint.h>
 #include <string.h>
+#include <cstdint>
 #include <time.h>
 
 #include "tracy_concurrentqueue.h"
@@ -945,5 +946,8 @@ private:
 };
 
 }
+
+TRACY_API std::uint16_t GetDataPort();
+TRACY_API std::uint16_t GetBroadcastPort();
 
 #endif

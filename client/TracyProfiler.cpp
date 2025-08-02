@@ -56,6 +56,7 @@
 #include <sys/stat.h>
 #include <thread>
 #include <iostream>
+#include <cstdint>
 
 #include "../common/TracyAlign.hpp"
 #include "../common/TracySocket.hpp"
@@ -1523,6 +1524,9 @@ bool Profiler::ShouldExit()
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
 
+static std::uint16_t dataPort;
+static std::uint16_t broadcastPort;
+
 void Profiler::Worker()
 {
 #ifdef __linux__
@@ -1534,8 +1538,8 @@ void Profiler::Worker()
     SetThreadName( "Tracy Profiler" );
 
     const bool dataPortSearch = true;
-    auto dataPort = 8101;
-    const auto broadcastPort = 8100;
+    dataPort = 8101;
+    broadcastPort = 8100;
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
@@ -4264,5 +4268,13 @@ TRACY_API void ___tracy_shutdown_profiler( void )
 #ifdef __cplusplus
 }
 #endif
+
+std::uint16_t GetDataPort() {
+    return dataPort;
+}
+
+std::uint16_t GetBroadcastPort() {
+    return broadcastPort;
+}
 
 #endif
